@@ -11,10 +11,8 @@ import (
 	"strconv"
 )
 
-func PriceStreamer(price *helpers.Price) {
-	s := make(chan os.Signal)
-	done, cnsl := context.WithCancel(context.Background())
-
+func PriceStreamer(ctx context.Context, cnsl context.CancelFunc,
+	s chan os.Signal, price *helpers.Price, askIncrement, bidIncrement float64) {
 	cfg, err := config.NewConfig()
 	if err != nil {
 		log.Error(err)
@@ -29,7 +27,7 @@ func PriceStreamer(price *helpers.Price) {
 	defer kafkaClient.Close()
 
 
-	err = helpers.SendMsgToKafka(done, kafkaClient, price)
+	err = helpers.SendMsgToKafka(ctx, askIncrement, bidIncrement, kafkaClient, price)
 	if err != nil {
 		log.Fatal(err)
 	}
