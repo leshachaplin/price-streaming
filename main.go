@@ -12,7 +12,7 @@ import (
 )
 
 func PriceStreamer(ctx context.Context, cnsl context.CancelFunc,
-	s chan os.Signal, price *helpers.Price, askIncrement, bidIncrement float64) {
+	s chan os.Signal, price *helpers.Price, second int, askIncrement, bidIncrement float64) {
 	cfg, err := config.NewConfig()
 	if err != nil {
 		log.Error(err)
@@ -27,7 +27,7 @@ func PriceStreamer(ctx context.Context, cnsl context.CancelFunc,
 	defer kafkaClient.Close()
 
 
-	err = helpers.SendMsgToKafka(ctx, askIncrement, bidIncrement, kafkaClient, price)
+	err = helpers.SendMsgToKafka(ctx, askIncrement, bidIncrement, kafkaClient, price, second)
 	if err != nil {
 		log.Fatal(err)
 	}

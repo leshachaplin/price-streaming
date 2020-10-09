@@ -23,8 +23,8 @@ func (p *Price) GetPrice(short bool) float64 {
 }
 
 func SendMsgToKafka(ctx context.Context, askIncrement float64,
-	bidIncrement float64, conn *kafka2.Client, price *Price) error {
-	t := time.NewTicker(time.Second * 15)
+	bidIncrement float64, conn *kafka2.Client, price *Price, seconds int) error {
+	t := time.NewTicker(time.Second * time.Duration(seconds))
 	for {
 		select {
 		case <-ctx.Done():
