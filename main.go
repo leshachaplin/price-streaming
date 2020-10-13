@@ -1,33 +1,62 @@
-package price_streaming
+package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/leshachaplin/price-streaming/config"
 	"github.com/leshachaplin/price-streaming/helpers"
-	"github.com/leshachaplin/price-streaming/kafka"
 	log "github.com/sirupsen/logrus"
 	"os"
-	"strconv"
+	"os/signal"
+	"time"
 )
 
-func PriceStreamer(ctx context.Context, cnsl context.CancelFunc,
-	s chan os.Signal, price *helpers.Price, second int, askIncrement, bidIncrement float64) {
+func main() {
+	s := make(chan os.Signal)
+	done, cnsl := context.WithCancel(context.Background())
+
 	cfg, err := config.NewConfig()
 	if err != nil {
 		log.Error(err)
 	}
 
-	kafkaUrl := fmt.Sprint(cfg.KafkaConfig.Host + ":" + strconv.Itoa(cfg.KafkaConfig.Port))
-	kafkaClient, err := kafka.New(cfg.KafkaConfig.Topic, cfg.KafkaConfig.Group, kafkaUrl, "tcp")
-	if err != nil {
-		log.Fatal(err)
+	var prices = []*helpers.Price{
+		{
+			Bid:      1.0,
+			Ask:      1.0,
+			Date:     time.Now().UTC(),
+			Symbol:   "EURUSD",
+			Currency: "USD",
+		},
+
+		{
+			Bid:      1.0,
+			Ask:      1.0,
+			Date:     time.Now().UTC(),
+			Symbol:   "EURCZK",
+			Currency: "EUR",
+		},
+
+		{
+			Bid:      1.0,
+			Ask:      1.0,
+			Date:     time.Now().UTC(),
+			Symbol:   "BELUSD",
+			Currency: "BEL",
+		},
+
+		{
+			Bid:      1.0,
+			Ask:      1.0,
+			Date:     time.Now().UTC(),
+			Symbol:   "USDUAH",
+			Currency: "UAH",
+		},
 	}
 
-	defer kafkaClient.Close()
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt)
 
-
-	err = helpers.SendMsgToKafka(ctx, askIncrement, bidIncrement, kafkaClient, price, second)
+	_, err = helpers.NewRedisSender(done, cfg.RedisClient,0.001, 0.003, prices, 15)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -35,4 +64,17 @@ func PriceStreamer(ctx context.Context, cnsl context.CancelFunc,
 	<-s
 	close(s)
 	cnsl()
+
+	for {
+		select {
+		case <-c:
+			cnsl()
+			if err := cfg.RedisClient.Close(); err != nil {
+				log.Errorf("database not closed %s", err)
+			}
+			log.Info("Cancel is successful")
+			close(c)
+			return
+		}
+	}
 }

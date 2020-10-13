@@ -2,8 +2,14 @@ package helpers
 
 import (
 	"context"
-	"encoding/json"
-	kafka2 "github.com/leshachaplin/price-streaming/kafka"
+	"fmt"
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
+	"github.com/leshachaplin/price-streaming/protocol"
+	"sync"
+
+	//kafka2 "github.com/leshachaplin/price-streaming/kafka"
+	"github.com/go-redis/redis/v7"
 	"time"
 )
 
@@ -22,8 +28,64 @@ func (p *Price) GetPrice(short bool) float64 {
 	return p.Bid
 }
 
-func SendMsgToKafka(ctx context.Context, askIncrement float64,
-	bidIncrement float64, conn *kafka2.Client, price *Price, seconds int) error {
+func (p *Price) UnmarshalBinary(data []byte) (*Price, error) {
+	price := &protocol.Price{}
+	err := proto.Unmarshal(data, price)
+	if err != nil {
+		return nil, err
+	}
+
+	date, err := ptypes.Timestamp(price.Date)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Price{
+		Bid:      price.Bid,
+		Ask:      price.Ack,
+		Date:     date,
+		Symbol:   price.Symbol,
+		Currency: price.Currency,
+	}, nil
+}
+func (p *Price) MarshalBinary() ([]byte, error) {
+
+	date, err := ptypes.TimestampProto(p.Date)
+	if err != nil {
+		return nil, err
+	}
+
+	message := &protocol.Price{
+		Bid:      p.Bid,
+		Ack:      p.Ask,
+		Date:     date,
+		Symbol:   p.Symbol,
+		Currency: p.Currency,
+	}
+	return proto.Marshal(message)
+}
+
+type RedisSender struct {
+	c      redis.UniversalClient
+	lastID string
+	mu     sync.RWMutex
+}
+
+func NewRedisSender(ctx context.Context, client redis.UniversalClient,
+	askIncrement float64, bidIncrement float64,
+	prices []*Price, seconds int) (*RedisSender, error) {
+	snd := &RedisSender{
+		c:           client,
+		lastID:      "1",
+	}
+
+	err := snd.SendMsgToRedis(ctx, askIncrement, bidIncrement, prices, seconds)
+
+	return snd, err
+}
+
+func (r *RedisSender) SendMsgToRedis(ctx context.Context, askIncrement float64,
+	bidIncrement float64, prices []*Price, seconds int) error {
 	t := time.NewTicker(time.Second * time.Duration(seconds))
 	for {
 		select {
@@ -33,18 +95,27 @@ func SendMsgToKafka(ctx context.Context, askIncrement float64,
 			}
 		case <-t.C:
 			{
-				price.Ask += askIncrement
-				price.Bid += bidIncrement
-				msg, err := json.Marshal(price)
-				if err != nil {
-					return err
-				}
+				for i := 0; i < len(prices); i++ {
+					prices[i].Ask += askIncrement + float64(i)/1000
+					prices[i].Bid += bidIncrement + float64(i)/1000
+					msg, err := prices[i].MarshalBinary()
+					if err != nil {
+						return err
+					}
 
-				err = conn.WriteMessage(msg)
-				if err != nil {
-					return err
+					fmt.Println(string(msg))
+
+					_, err = r.c.XAdd(&redis.XAddArgs{
+						Stream:       "prices",
+						ID:           "*",
+						Values: map[string]interface{}{
+							prices[i].Symbol: prices[i],
+						},
+					}).Result()
+					if err != nil {
+						return err
+					}
 				}
-				return nil
 			}
 		}
 	}
