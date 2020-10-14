@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/leshachaplin/price-streaming/protocol"
+	"strconv"
 	"sync"
 
 	//kafka2 "github.com/leshachaplin/price-streaming/kafka"
@@ -35,30 +35,20 @@ func (p *Price) UnmarshalBinary(data []byte) (*Price, error) {
 		return nil, err
 	}
 
-	date, err := ptypes.Timestamp(price.Date)
-	if err != nil {
-		return nil, err
-	}
-
 	return &Price{
 		Bid:      price.Bid,
 		Ask:      price.Ack,
-		Date:     date,
+		Date:     time.Unix(price.Date, 0),
 		Symbol:   price.Symbol,
 		Currency: price.Currency,
 	}, nil
 }
 func (p *Price) MarshalBinary() ([]byte, error) {
 
-	date, err := ptypes.TimestampProto(p.Date)
-	if err != nil {
-		return nil, err
-	}
-
 	message := &protocol.Price{
 		Bid:      p.Bid,
 		Ack:      p.Ask,
-		Date:     date,
+		Date:     p.Date.Unix(),
 		Symbol:   p.Symbol,
 		Currency: p.Currency,
 	}
@@ -75,8 +65,8 @@ func NewRedisSender(ctx context.Context, client redis.UniversalClient,
 	askIncrement float64, bidIncrement float64,
 	prices []*Price, seconds int) (*RedisSender, error) {
 	snd := &RedisSender{
-		c:           client,
-		lastID:      "1",
+		c:      client,
+		lastID: "1",
 	}
 
 	err := snd.SendMsgToRedis(ctx, askIncrement, bidIncrement, prices, seconds)
@@ -106,8 +96,8 @@ func (r *RedisSender) SendMsgToRedis(ctx context.Context, askIncrement float64,
 					fmt.Println(string(msg))
 
 					_, err = r.c.XAdd(&redis.XAddArgs{
-						Stream:       "prices",
-						ID:           "*",
+						Stream: "prices",
+						ID:     strconv.Itoa(int(time.Now().Unix())),
 						Values: map[string]interface{}{
 							prices[i].Symbol: prices[i],
 						},

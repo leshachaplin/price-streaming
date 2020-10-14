@@ -8,7 +8,7 @@ option go_package = "./protocol";
 message Price {
     double Bid = 1;
     double Ack = 2;
-    google.protobuf.Timestamp Date = 3;
+    int64  Date = 3;
     string Symbol = 4;
     string Currency = 5;
 }
