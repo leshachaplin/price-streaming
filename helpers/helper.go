@@ -66,7 +66,7 @@ func NewRedisSender(ctx context.Context, client redis.UniversalClient,
 	prices []*Price, seconds int) (*RedisSender, error) {
 	snd := &RedisSender{
 		c:      client,
-		lastID: "1",
+		lastID: strconv.Itoa(int(time.Now().UTC().Unix())),
 	}
 
 	err := snd.SendMsgToRedis(ctx, askIncrement, bidIncrement, prices, seconds)
@@ -97,7 +97,7 @@ func (r *RedisSender) SendMsgToRedis(ctx context.Context, askIncrement float64,
 
 					_, err = r.c.XAdd(&redis.XAddArgs{
 						Stream: "prices",
-						ID:     strconv.Itoa(int(time.Now().Unix())),
+						ID:     strconv.Itoa(int(time.Now().UTC().Unix())),
 						Values: map[string]interface{}{
 							prices[i].Symbol: prices[i],
 						},
