@@ -19,44 +19,58 @@ func main() {
 		log.Error(err)
 	}
 
-	var prices = []*helpers.Price{
-		{
-			Bid:      1.0,
-			Ask:      1.0,
-			Date:     time.Now().UTC(),
-			Symbol:   "EURUSD",
-			Currency: "USD",
-		},
+	EURUSD := &helpers.Price{
 
-		{
-			Bid:      1.0,
-			Ask:      1.0,
-			Date:     time.Now().UTC(),
-			Symbol:   "EURCZK",
-			Currency: "EUR",
-		},
+		Bid:      1.0,
+		Ask:      1.0,
+		Date:     time.Now().UTC(),
+		Symbol:   "EURUSD",
+		Currency: "USD",
+	}
 
-		{
-			Bid:      1.0,
-			Ask:      1.0,
-			Date:     time.Now().UTC(),
-			Symbol:   "BELUSD",
-			Currency: "BEL",
-		},
+	EURCZK := &helpers.Price{
+		Bid:      1.0,
+		Ask:      1.0,
+		Date:     time.Now().UTC(),
+		Symbol:   "EURCZK",
+		Currency: "EUR",
+	}
 
-		{
-			Bid:      1.0,
-			Ask:      1.0,
-			Date:     time.Now().UTC(),
-			Symbol:   "USDUAH",
-			Currency: "UAH",
-		},
+	BELUSD := &helpers.Price{
+		Bid:      1.0,
+		Ask:      1.0,
+		Date:     time.Now().UTC(),
+		Symbol:   "BELUSD",
+		Currency: "BEL",
+	}
+
+	USDUAH := &helpers.Price{
+		Bid:      1.0,
+		Ask:      1.0,
+		Date:     time.Now().UTC(),
+		Symbol:   "USDUAH",
+		Currency: "UAH",
 	}
 
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt)
 
-	_, err = helpers.NewRedisSender(done, cfg.RedisClient,0.001, 0.003, prices, 15)
+	_, err = helpers.NewRedisSender(done, cfg.RedisClient, 0.001, 0.003, EURUSD, 15)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = helpers.NewRedisSender(done, cfg.RedisClient, 0.002, 0.005, EURCZK, 15)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = helpers.NewRedisSender(done, cfg.RedisClient, 0.006, 0.007, BELUSD, 15)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = helpers.NewRedisSender(done, cfg.RedisClient, 0.001, 0.003, USDUAH, 15)
 	if err != nil {
 		log.Fatal(err)
 	}

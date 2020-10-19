@@ -2,9 +2,11 @@ package helpers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/leshachaplin/price-streaming/protocol"
+	"math/rand"
 	"strconv"
 	"sync"
 
@@ -14,6 +16,7 @@ import (
 )
 
 type Price struct {
+	Id       string
 	Bid      float64
 	Ask      float64
 	Date     time.Time
@@ -36,6 +39,7 @@ func (p *Price) UnmarshalBinary(data []byte) (*Price, error) {
 	}
 
 	return &Price{
+		Id:       price.PriceId,
 		Bid:      price.Bid,
 		Ask:      price.Ack,
 		Date:     time.Unix(price.Date, 0),
@@ -46,6 +50,7 @@ func (p *Price) UnmarshalBinary(data []byte) (*Price, error) {
 func (p *Price) MarshalBinary() ([]byte, error) {
 
 	message := &protocol.Price{
+		PriceId:  p.Id,
 		Bid:      p.Bid,
 		Ack:      p.Ask,
 		Date:     p.Date.Unix(),
@@ -63,19 +68,21 @@ type RedisSender struct {
 
 func NewRedisSender(ctx context.Context, client redis.UniversalClient,
 	askIncrement float64, bidIncrement float64,
-	prices []*Price, seconds int) (*RedisSender, error) {
+	prices *Price, seconds int) (*RedisSender, error) {
 	snd := &RedisSender{
 		c:      client,
 		lastID: strconv.Itoa(int(time.Now().UTC().Unix())),
 	}
-
-	err := snd.SendMsgToRedis(ctx, askIncrement, bidIncrement, prices, seconds)
+	var err error
+	go func(ctx context.Context, e error, sec int, pr *Price, askIncrement, bidIncrement float64) {
+		err = snd.SendMsgToRedis(ctx, askIncrement, bidIncrement, prices, seconds)
+	}(ctx, err, seconds, prices, askIncrement, bidIncrement)
 
 	return snd, err
 }
 
 func (r *RedisSender) SendMsgToRedis(ctx context.Context, askIncrement float64,
-	bidIncrement float64, prices []*Price, seconds int) error {
+	bidIncrement float64, prices *Price, seconds int) error {
 	t := time.NewTicker(time.Second * time.Duration(seconds))
 	for {
 		select {
@@ -85,26 +92,25 @@ func (r *RedisSender) SendMsgToRedis(ctx context.Context, askIncrement float64,
 			}
 		case <-t.C:
 			{
-				for i := 0; i < len(prices); i++ {
-					prices[i].Ask += askIncrement + float64(i)/1000
-					prices[i].Bid += bidIncrement + float64(i)/1000
-					msg, err := prices[i].MarshalBinary()
-					if err != nil {
-						return err
-					}
+				prices.Ask += askIncrement + float64(rand.Intn(100))/1000
+				prices.Bid += bidIncrement + float64(rand.Intn(100))/1000
+				prices.Id = fmt.Sprintf("%d", time.Now().UTC().UnixNano())
 
-					fmt.Println(string(msg))
+				msg1, err := json.Marshal(prices)
+				if err != nil {
+					return err
+				}
 
-					_, err = r.c.XAdd(&redis.XAddArgs{
-						Stream: "prices",
-						ID:     strconv.Itoa(int(time.Now().UTC().Unix())),
-						Values: map[string]interface{}{
-							prices[i].Symbol: prices[i],
-						},
-					}).Result()
-					if err != nil {
-						return err
-					}
+				fmt.Println(string(msg1))
+				_, err = r.c.XAdd(&redis.XAddArgs{
+					Stream: prices.Symbol,
+					ID:     fmt.Sprintf("%d", time.Now().UTC().UnixNano()),
+					Values: map[string]interface{}{
+						prices.Id: prices,
+					},
+				}).Result()
+				if err != nil {
+					return err
 				}
 			}
 		}
