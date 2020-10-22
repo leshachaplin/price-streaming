@@ -16,7 +16,7 @@ import (
 )
 
 type Price struct {
-	Id       string
+	ID       string
 	Bid      float64
 	Ask      float64
 	Date     time.Time
@@ -39,7 +39,7 @@ func (p *Price) UnmarshalBinary(data []byte) (*Price, error) {
 	}
 
 	return &Price{
-		Id:       price.PriceId,
+		ID:       price.PriceId,
 		Bid:      price.Bid,
 		Ask:      price.Ack,
 		Date:     time.Unix(price.Date, 0),
@@ -50,7 +50,7 @@ func (p *Price) UnmarshalBinary(data []byte) (*Price, error) {
 func (p *Price) MarshalBinary() ([]byte, error) {
 
 	message := &protocol.Price{
-		PriceId:  p.Id,
+		PriceId:  p.ID,
 		Bid:      p.Bid,
 		Ack:      p.Ask,
 		Date:     p.Date.Unix(),
@@ -94,7 +94,7 @@ func (r *RedisSender) SendMsgToRedis(ctx context.Context, askIncrement float64,
 			{
 				prices.Ask += askIncrement + float64(rand.Intn(100))/1000
 				prices.Bid += bidIncrement + float64(rand.Intn(100))/1000
-				prices.Id = fmt.Sprintf("%d", time.Now().UTC().UnixNano())
+				prices.ID = fmt.Sprintf("%d", time.Now().UTC().UnixNano())
 
 				msg1, err := json.Marshal(prices)
 				if err != nil {
@@ -106,7 +106,7 @@ func (r *RedisSender) SendMsgToRedis(ctx context.Context, askIncrement float64,
 					Stream: prices.Symbol,
 					ID:     fmt.Sprintf("%d", time.Now().UTC().UnixNano()),
 					Values: map[string]interface{}{
-						prices.Id: prices,
+						prices.ID: prices,
 					},
 				}).Result()
 				if err != nil {
