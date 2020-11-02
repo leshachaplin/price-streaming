@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/golang/protobuf/proto"
-	"github.com/leshachaplin/price-streaming/protocol"
 	"math/rand"
 	"strconv"
 	"sync"
@@ -32,32 +30,16 @@ func (p *Price) GetPrice(short bool) float64 {
 }
 
 func (p *Price) UnmarshalBinary(data []byte) (*Price, error) {
-	price := &protocol.Price{}
-	err := proto.Unmarshal(data, price)
+	price := &Price{}
+	err := json.Unmarshal(data, price)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Price{
-		ID:       price.PriceId,
-		Bid:      price.Bid,
-		Ask:      price.Ack,
-		Date:     time.Unix(price.Date, 0),
-		Symbol:   price.Symbol,
-		Currency: price.Currency,
-	}, nil
+	return price, nil
 }
 func (p *Price) MarshalBinary() ([]byte, error) {
-
-	message := &protocol.Price{
-		PriceId:  p.ID,
-		Bid:      p.Bid,
-		Ack:      p.Ask,
-		Date:     p.Date.Unix(),
-		Symbol:   p.Symbol,
-		Currency: p.Currency,
-	}
-	return proto.Marshal(message)
+	return json.Marshal(p)
 }
 
 type RedisSender struct {
@@ -101,12 +83,18 @@ func (r *RedisSender) SendMsgToRedis(ctx context.Context, askIncrement float64,
 					return err
 				}
 
+				msg, err := prices.MarshalBinary()
+				if err != nil {
+					return err
+				}
+
 				fmt.Println(string(msg1))
 				_, err = r.c.XAdd(&redis.XAddArgs{
-					Stream: prices.Symbol,
-					ID:     fmt.Sprintf("%d", time.Now().UTC().UnixNano()),
+					Stream:       prices.Symbol,
+					MaxLenApprox: 200,
+					ID:           prices.ID,
 					Values: map[string]interface{}{
-						prices.ID: prices,
+						prices.ID: msg,
 					},
 				}).Result()
 				if err != nil {

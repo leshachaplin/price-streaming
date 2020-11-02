@@ -55,22 +55,22 @@ func main() {
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt)
 
-	_, err = helpers.NewRedisSender(done, cfg.RedisClient, 0.001, 0.003, EURUSD, 15)
+	_, err = helpers.NewRedisSender(done, cfg.RedisClient, 0.1, 0.3, EURUSD, 10)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	_, err = helpers.NewRedisSender(done, cfg.RedisClient, 0.002, 0.005, EURCZK, 15)
+	_, err = helpers.NewRedisSender(done, cfg.RedisClient, 0.2, 0.5, EURCZK, 10)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	_, err = helpers.NewRedisSender(done, cfg.RedisClient, 0.006, 0.007, BELUSD, 15)
+	_, err = helpers.NewRedisSender(done, cfg.RedisClient, 0.6, 0.7, BELUSD, 10)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	_, err = helpers.NewRedisSender(done, cfg.RedisClient, 0.001, 0.003, USDUAH, 15)
+	_, err = helpers.NewRedisSender(done, cfg.RedisClient, 0.2, 0.3, USDUAH, 10)
 	if err != nil {
 		log.Fatal(err)
 	}
