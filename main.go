@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
+	"strconv"
 	"time"
 )
 
@@ -19,61 +20,63 @@ func main() {
 		log.Error(err)
 	}
 
-	EURUSD := &helpers.Price{
+	for i := 0; i < 5000; i++ {
+		EURUSD := &helpers.Price{
 
-		Bid:      1.0,
-		Ask:      1.0,
-		Date:     time.Now().UTC(),
-		Symbol:   "EURUSD",
-		Currency: "USD",
-	}
+			Bid:      1.0,
+			Ask:      1.0,
+			Date:     time.Now().UTC(),
+			Symbol:   "EURUSD" + strconv.Itoa(i),
+			Currency: "USD",
+		}
 
-	EURCZK := &helpers.Price{
-		Bid:      1.0,
-		Ask:      1.0,
-		Date:     time.Now().UTC(),
-		Symbol:   "EURCZK",
-		Currency: "EUR",
-	}
+		EURCZK := &helpers.Price{
+			Bid:      1.0,
+			Ask:      1.0,
+			Date:     time.Now().UTC(),
+			Symbol:   "EURCZK" + strconv.Itoa(i),
+			Currency: "EUR",
+		}
 
-	BELUSD := &helpers.Price{
-		Bid:      1.0,
-		Ask:      1.0,
-		Date:     time.Now().UTC(),
-		Symbol:   "BELUSD",
-		Currency: "BEL",
-	}
+		BELUSD := &helpers.Price{
+			Bid:      1.0,
+			Ask:      1.0,
+			Date:     time.Now().UTC(),
+			Symbol:   "BELUSD" + strconv.Itoa(i),
+			Currency: "BEL",
+		}
 
-	USDUAH := &helpers.Price{
-		Bid:      1.0,
-		Ask:      1.0,
-		Date:     time.Now().UTC(),
-		Symbol:   "USDUAH",
-		Currency: "UAH",
+		USDUAH := &helpers.Price{
+			Bid:      1.0,
+			Ask:      1.0,
+			Date:     time.Now().UTC(),
+			Symbol:   "USDUAH" + strconv.Itoa(i),
+			Currency: "UAH",
+		}
+
+		_, err = helpers.NewRedisSender(done, cfg.RedisClient, 4, 3.5, EURUSD, 10)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		_, err = helpers.NewRedisSender(done, cfg.RedisClient, 2, 2.5, EURCZK, 10)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		_, err = helpers.NewRedisSender(done, cfg.RedisClient, 2.6, 2.7, BELUSD, 10)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		_, err = helpers.NewRedisSender(done, cfg.RedisClient, 2.2, 2.3, USDUAH, 10)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt)
-
-	_, err = helpers.NewRedisSender(done, cfg.RedisClient, 4, 3.5, EURUSD, 10)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, err = helpers.NewRedisSender(done, cfg.RedisClient, 2, 2.5, EURCZK, 10)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, err = helpers.NewRedisSender(done, cfg.RedisClient, 2.6, 2.7, BELUSD, 10)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, err = helpers.NewRedisSender(done, cfg.RedisClient, 2.2, 2.3, USDUAH, 10)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	<-s
 	close(s)
