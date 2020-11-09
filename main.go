@@ -12,6 +12,7 @@ import (
 )
 
 func main() {
+
 	s := make(chan os.Signal)
 	done, cnsl := context.WithCancel(context.Background())
 
@@ -74,6 +75,8 @@ func main() {
 			log.Fatal(err)
 		}
 	}
+
+	log.Info("cycle for END")
 
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt)
