@@ -24,13 +24,7 @@ func NewConfig() (*Config, error) {
 		fmt.Printf("%+v\n", err)
 	}
 
-	awsConf, err := config.NewForAws("us-west-2")
-	if err != nil {
-		log.Errorf("Can't connect to aws", err)
-		return nil, err
-	}
-
-	redisConfig, err := awsConf.GetRedis(cfg.RedisSecret)
+	redisConfig, err := config.GetRedis(cfg.RedisSecret)
 	if err != nil {
 		log.Errorf("Can't get kafka config from aws", err)
 		return nil, err
