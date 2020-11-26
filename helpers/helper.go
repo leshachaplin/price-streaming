@@ -91,7 +91,7 @@ func (r *RedisSender) SendMsgToRedis(ctx context.Context, askIncrement float64,
 				fmt.Println(string(msg1))
 				_, err = r.c.XAdd(&redis.XAddArgs{
 					Stream:       prices.Symbol,
-					MaxLenApprox: 200,
+					MaxLenApprox: 5000,
 					ID:           prices.ID,
 					Values: map[string]interface{}{
 						prices.ID: msg,

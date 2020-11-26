@@ -20,7 +20,7 @@ func main() {
 		log.Error(err)
 	}
 
-	//for i := 0; i < 5; i++ {
+	//for i := 0; i < 100; i++ {
 	//	EURUSD := &helpers.Price{
 	//
 	//		Bid:      1.0,
@@ -30,7 +30,7 @@ func main() {
 	//		Currency: "USD",
 	//	}
 	//
-	//	_, err = helpers.NewRedisSender(done, cfg.RedisClient, 4, 3.5, EURUSD, 10)
+	//	_, err = helpers.NewRedisSender(done, cfg.RedisClient, 10, 13.5, EURUSD, 8)
 	//	if err != nil {
 	//		log.Fatal(err)
 	//	}
@@ -45,7 +45,7 @@ func main() {
 		Currency: "USD",
 	}
 
-	_, err = helpers.NewRedisSender(done, cfg.RedisClient, 2, 2.5, EURUSD, 10)
+	_, err = helpers.NewRedisSender(done, cfg.RedisClient, 4, 4.5, EURUSD, 5)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -59,7 +59,7 @@ func main() {
 		Currency: "USD",
 	}
 
-	_, err = helpers.NewRedisSender(done, cfg.RedisClient, 19, 17.5, EURUSD0, 10)
+	_, err = helpers.NewRedisSender(done, cfg.RedisClient, 4.5, 6, EURUSD0, 4)
 	if err != nil {
 		log.Fatal(err)
 	}
